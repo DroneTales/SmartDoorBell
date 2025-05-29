@@ -55,21 +55,18 @@ volatile bool _Ring = false;
 /**************************************************************************************/
 /*                              Doorbell signal interrup                              */
 
-void IRAM_ATTR RingInterrupt()
-{
+void IRAM_ATTR RingInterrupt() {
     static bool WasHigh = false;
     static uint32_t LastMillis = 0;
 
     uint32_t Level = digitalRead(BELL_BUTTON_PIN);
-    if (Level == HIGH && !WasHigh)
-    {
+    if (Level == HIGH && !WasHigh) {
         WasHigh = true;
         LastMillis = millis();
         return;
     }
 
-    if (Level == LOW && WasHigh)
-    {
+    if (Level == LOW && WasHigh) {
         WasHigh = false;
 
         uint32_t CurrentMillis = millis();
@@ -84,20 +81,17 @@ void IRAM_ATTR RingInterrupt()
 /**************************************************************************************/
 /*                               Virtual Door Bell switch                             */
 
-struct DoorbellSwitch : Service::Switch
-{
+struct DoorbellSwitch : Service::Switch {
     SpanCharacteristic* Power;
     
-    DoorbellSwitch() : Service::Switch()
-    {
+    DoorbellSwitch() : Service::Switch() {
         // Default is false (bell is turned off) and we store current value in NVS.
         Power = new Characteristic::On(false, true);
         // Get current state.
         _DoorbellEnabled = Power->getVal();
     }
     
-    bool update()
-    {
+    bool update() {
         _DoorbellEnabled = Power->getNewVal();
         return true;
     }
@@ -109,13 +103,11 @@ struct DoorbellSwitch : Service::Switch
 /**************************************************************************************/
 /*                                   Door Bell service                                */
 
-struct DoorBell : Service::Doorbell
-{
+struct DoorBell : Service::Doorbell {
     // Reference to the ProgrammableSwitchEvent Characteristic
     SpanCharacteristic* SwitchEvent;
     
-    DoorBell() : Service::Doorbell()
-    {
+    DoorBell() : Service::Doorbell() {
         // Programmable Switch Event Characteristic.
         SwitchEvent = new Characteristic::ProgrammableSwitchEvent();  
     }
@@ -126,8 +118,7 @@ DoorBell* _DoorBell = nullptr;
 
 
 // Arduino initialization routine.
-void setup()
-{
+void setup() {
     // Initialize debug serial port.
     Serial.begin(115200);
     
@@ -177,14 +168,11 @@ void setup()
 }
 
 // Arduino main loop.
-void loop()
-{
-    if (_Ring)
-    {
+void loop() {
+    if (_Ring) {
         _Ring = false;
 
-        if (_DoorbellEnabled)
-        {
+        if (_DoorbellEnabled) {
             _DoorBell->SwitchEvent->setVal(SpanButton::SINGLE);
             
             digitalWrite(BELL_SIGNAL_PIN, HIGH);
