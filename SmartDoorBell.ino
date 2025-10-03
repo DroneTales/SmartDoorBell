@@ -70,8 +70,9 @@ void IRAM_ATTR RingInterrupt() {
         WasHigh = false;
 
         uint32_t CurrentMillis = millis();
-        if (CurrentMillis - LastMillis >= BELL_BUTTON_SIGNAL_DURATION)
+        if (CurrentMillis - LastMillis >= BELL_BUTTON_SIGNAL_DURATION) {
             _Ring = true;
+        }
         return;
     }
 }
