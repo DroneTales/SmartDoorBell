@@ -41,13 +41,48 @@
 
 
 /**************************************************************************************/
-/*                                  Global variables                                  */
+/*                                  Doorbell service                                  */
 
 // The doorbell state. True if the doorbell is enabled and should play a sound.
 // False if the doorbell is disabled and should not play any sound.
-bool _DoorbellEnabled = false;
+bool _Enabled = false;
+// Reference to the ProgrammableSwitchEvent Characteristic
+SpanCharacteristic* _Event = nullptr;
 // Indicates when the ring button was pressed.
 volatile bool _Ring = false;
+
+struct Doorbell : Service::Doorbell
+{
+    Doorbell() : Service::Doorbell()
+    {
+        _Event = new Characteristic::ProgrammableSwitchEvent();
+    }
+};
+
+/**************************************************************************************/
+
+
+/**************************************************************************************/
+/*                              Virtual  Doorbell switch                              */
+
+struct DoorbellSwitch : Service::Switch
+{
+    SpanCharacteristic* Power;
+    
+    DoorbellSwitch() : Service::Switch()
+    {
+        // Default is false (bell is turned off) and we store current value in NVS.
+        Power = new Characteristic::On(false, true);
+        // Get current state.
+        _Enabled = Power->getVal();
+    }
+    
+    bool update()
+    {
+        _Enabled = Power->getNewVal();
+        return true;
+    }
+};
 
 /**************************************************************************************/
 
@@ -78,52 +113,12 @@ void IRAM_ATTR RingInterrupt()
         return;
     }
 }
-/**************************************************************************************/
-
-
-/**************************************************************************************/
-/*                               Virtual Door Bell switch                             */
-
-struct DoorbellSwitch : Service::Switch
-{
-    SpanCharacteristic* Power;
-    
-    DoorbellSwitch() : Service::Switch()
-    {
-        // Default is false (bell is turned off) and we store current value in NVS.
-        Power = new Characteristic::On(false, true);
-        // Get current state.
-        _DoorbellEnabled = Power->getVal();
-    }
-    
-    bool update()
-    {
-        _DoorbellEnabled = Power->getNewVal();
-        return true;
-    }
-};
 
 /**************************************************************************************/
 
 
 /**************************************************************************************/
-/*                                   Door Bell service                                */
-
-struct DoorBell : Service::Doorbell
-{
-    // Reference to the ProgrammableSwitchEvent Characteristic
-    SpanCharacteristic* SwitchEvent;
-    
-    DoorBell() : Service::Doorbell()
-    {
-        // Programmable Switch Event Characteristic.
-        SwitchEvent = new Characteristic::ProgrammableSwitchEvent();  
-    }
-};
-
-DoorBell* _DoorBell = nullptr;
-/**************************************************************************************/
-
+/*                                  Arduino routines                                  */
 
 // Arduino initialization routine.
 void setup()
@@ -160,7 +155,7 @@ void setup()
     new Characteristic::Model("DroneTales Doorbell");
     new Characteristic::FirmwareRevision("1.0.0.0");
     new Characteristic::Name("Doorbell");
-    _DoorBell = new DoorBell();
+    new Doorbell();
 
     // Configure doorbell switch.
     new SpanAccessory();
@@ -179,19 +174,27 @@ void setup()
 // Arduino main loop.
 void loop()
 {
+    bool DoRing = false;
+
     if (_Ring)
     {
         _Ring = false;
 
-        if (_DoorbellEnabled)
+        if (_Enabled)
         {
-            _DoorBell->SwitchEvent->setVal(SpanButton::SINGLE);
-            
-            digitalWrite(BELL_SIGNAL_PIN, HIGH);
-            delay(BELL_SIGNAL_DURATION);
-            digitalWrite(BELL_SIGNAL_PIN, LOW);
+            _Event->setVal(SpanButton::SINGLE);
+            DoRing = true;
         }
-    }
+    }   
 
     homeSpan.poll();
+
+    if (DoRing)
+    {
+        digitalWrite(BELL_SIGNAL_PIN, HIGH);
+        delay(BELL_SIGNAL_DURATION);
+        digitalWrite(BELL_SIGNAL_PIN, LOW);
+    }
 }
+
+/**************************************************************************************/
