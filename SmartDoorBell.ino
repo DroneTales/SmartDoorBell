@@ -32,6 +32,12 @@
 // The doorbell signal pin (wired to the sound chip)
 #define BELL_SIGNAL_PIN                 GPIO_NUM_10
 
+/**************************************************************************************/
+
+
+/**************************************************************************************/
+/*                                  Firmware defines                                  */
+
 // The doorbell button signal duration in milliseconds.
 #define BELL_BUTTON_SIGNAL_DURATION     500
 // The doorbell play signal duration in milliseconds.
@@ -41,21 +47,27 @@
 
 
 /**************************************************************************************/
-/*                                  Doorbell service                                  */
+/*                                  Global variables                                  */
 
 // The doorbell state. True if the doorbell is enabled and should play a sound.
 // False if the doorbell is disabled and should not play any sound.
-bool _Enabled = false;
+static bool BellEnabled = false;
 // Reference to the ProgrammableSwitchEvent Characteristic
-SpanCharacteristic* _Event = nullptr;
+static SpanCharacteristic* BellEvent = nullptr;
 // Indicates when the ring button was pressed.
-volatile bool _Ring = false;
+static volatile bool BellRing = false;
+
+/**************************************************************************************/
+
+
+/**************************************************************************************/
+/*                                  Doorbell service                                  */
 
 struct Doorbell : Service::Doorbell
 {
     Doorbell() : Service::Doorbell()
     {
-        _Event = new Characteristic::ProgrammableSwitchEvent();
+        BellEvent = new Characteristic::ProgrammableSwitchEvent();
     }
 };
 
@@ -74,12 +86,12 @@ struct DoorbellSwitch : Service::Switch
         // Default is false (bell is turned off) and we store current value in NVS.
         Power = new Characteristic::On(false, true);
         // Get current state.
-        _Enabled = Power->getVal();
+        BellEnabled = Power->getVal();
     }
     
     bool update()
     {
-        _Enabled = Power->getNewVal();
+        BellEnabled = Power->getNewVal();
         return true;
     }
 };
@@ -109,7 +121,7 @@ void IRAM_ATTR RingInterrupt()
 
         uint32_t CurrentMillis = millis();
         if (CurrentMillis - LastMillis >= BELL_BUTTON_SIGNAL_DURATION)
-            _Ring = true;
+            BellRing = true;
         return;
     }
 }
@@ -176,13 +188,13 @@ void loop()
 {
     bool DoRing = false;
 
-    if (_Ring)
+    if (BellRing)
     {
-        _Ring = false;
+        BellRing = false;
 
-        if (_Enabled)
+        if (BellEnabled)
         {
-            _Event->setVal(SpanButton::SINGLE);
+            BellEvent->setVal(SpanButton::SINGLE);
             DoRing = true;
         }
     }   
