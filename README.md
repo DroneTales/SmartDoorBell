@@ -8,8 +8,8 @@
  - ESP32C4FN Super Mini
  
  **Required Arduino Libraries**
- - esp32 by Espressif Systems (board) 3.3.3
- - HomeSpan 2.1.6
+ - esp32 by Espressif Systems (board) 3.3.7
+ - HomeSpan 2.1.7
  
  **Arduino IDE Settings**
  - Board: ESP32C3 Dev BModule
