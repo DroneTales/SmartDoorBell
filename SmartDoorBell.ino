@@ -122,7 +122,6 @@ void IRAM_ATTR RingInterrupt()
         uint32_t CurrentMillis = millis();
         if (CurrentMillis - LastMillis >= BELL_BUTTON_SIGNAL_DURATION)
             BellRing = true;
-        return;
     }
 }
 
