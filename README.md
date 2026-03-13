@@ -5,7 +5,7 @@
  
  **Required Hardware**
  - 433Mhz doorbell
- - ESP32C4FN Super Mini
+ - ESP32C3FN4 Super Mini
  
  **Required Arduino Libraries**
  - esp32 by Espressif Systems (board) 3.3.7
